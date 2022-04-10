@@ -13,7 +13,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name=name,
     version=__version__,
-    description='Tools to diff tar archives and filesystem trees',
+    description='Tools to diff and patch tar archives and filesystem trees',
     long_description=long_description,
     url="https://github.com/srand/tartools",
     author="Robert Andersson",
