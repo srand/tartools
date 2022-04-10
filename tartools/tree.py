@@ -75,7 +75,19 @@ class WhiteoutInode(object):
         return False
 
     @property
+    def gid(self):
+        return 0
+
+    @property
+    def linkpath(self):
+        return ""
+
+    @property
     def mode(self):
+        return 0
+
+    @property
+    def mtime(self):
         return 0
 
     @property
@@ -87,5 +99,5 @@ class WhiteoutInode(object):
         return 0
 
     @property
-    def type(self):
-        return Inode.TYPE_FILE
+    def uid(self):
+        return 0

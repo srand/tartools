@@ -16,29 +16,31 @@ class TarTree(Tree):
     def __getitem__(self, path):
         return TarInode(self._tarfile.getmember(path))
 
-    def _as_tarinfo(self, item):
-        ti = tarfile.TarInfo(item.path)
-        ti.uid = 0
-        ti.gid = 0
-        ti.mode = item.mode
-        ti.size = item.size
-        if item.is_symlink():
+    def _as_tarinfo(self, inode):
+        ti = tarfile.TarInfo(inode.path)
+        ti.uid = inode.uid
+        ti.gid = inode.gid
+        ti.linkname = inode.linkpath
+        ti.mode = inode.mode
+        ti.mtime = inode.mtime
+        ti.size = inode.size
+        if inode.is_symlink():
             ti.type = tarfile.SYMTYPE
-        elif item.is_dir():
+        elif inode.is_dir():
             ti.type = tarfile.DIRTYPE
         else:
             ti.type = tarfile.REGTYPE
         return ti
 
-    def add(self, item, fileobj=None):
-        taritem = self._as_tarinfo(item)
-        self._tarfile.addfile(taritem, fileobj)
+    def add(self, inode, fileobj=None):
+        tarinode = self._as_tarinfo(inode)
+        self._tarfile.addfile(tarinode, fileobj)
 
     @contextmanager
-    def read(self, item):
+    def read(self, inode):
         fileobj = None
         try:
-            fileobj = self._tarfile.extractfile(item.path)
+            fileobj = self._tarfile.extractfile(inode.path)
             yield fileobj
         finally:
             if fileobj is not None:
@@ -51,6 +53,7 @@ class TarTree(Tree):
 class TarInode(Inode):
     def __init__(self, tarinfo):
         self._tarinfo = tarinfo
+        self._size = None
 
     def is_dir(self):
         return self._tarinfo.isdir()
@@ -62,8 +65,20 @@ class TarInode(Inode):
         return self._tarinfo.issym()
 
     @property
+    def gid(self):
+        return self._tarinfo.gid
+
+    @property
+    def linkpath(self):
+        return self._tarinfo.linkname
+
+    @property
     def mode(self):
         return self._tarinfo.mode
+
+    @property
+    def mtime(self):
+        return self._tarinfo.mtime
 
     @property
     def path(self):
@@ -71,8 +86,12 @@ class TarInode(Inode):
 
     @property
     def size(self):
-        return self._tarinfo.size
+        return self._size or self._tarinfo.size
+
+    @size.setter
+    def size(self, value):
+        self._size = value
 
     @property
-    def type(self):
-        return self._tarinfo.type
+    def uid(self):
+        return self._tarinfo.uid

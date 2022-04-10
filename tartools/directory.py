@@ -23,8 +23,20 @@ class DirectoryInode(Inode):
         return stat.S_ISLNK(self._stat.st_mode)
 
     @property
+    def gid(self):
+        return self._stat.st_gid
+
+    @property
+    def linkpath(self):
+        return os.readlink(self._fullpath)
+
+    @property
     def mode(self):
         return self._stat.st_mode
+
+    @property
+    def mtime(self):
+        return self._stat.st_mtime
 
     @property
     def path(self):
@@ -37,6 +49,10 @@ class DirectoryInode(Inode):
     @size.setter
     def size(self, value):
         self._size = value
+
+    @property
+    def uid(self):
+        return self._stat.st_uid
 
 
 class DirectoryTree(Tree):
@@ -71,7 +87,6 @@ class DirectoryTree(Tree):
             os.mkdir(fullpath, inode.mode)
         elif inode.is_symlink():
             os.symlink(inode.linkpath, fullpath)
-            os.chmod(fullpath, inode.mode)
         else:
             with open(fullpath, "wb", inode.mode) as destobj:
                 if fileobj:

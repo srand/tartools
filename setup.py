@@ -36,7 +36,7 @@ setup(
     dependency_links=[],
     entry_points={
         'console_scripts': [
-            'tarapply=tartools.cmds.tarapply',
+            'tarapply=tartools.cmds.tarapply:main',
             'tardiff=tartools.cmds.tardiff:main',
             'tarsum=tartools.cmds.tarsum:main',
         ],
