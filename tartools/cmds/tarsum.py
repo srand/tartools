@@ -7,6 +7,7 @@ import sys
 
 from tartools.directory import DirectoryTree
 from tartools.tar import TarTree
+from tartools.version import __version__
 
 
 def new_tree(path, writeable=False):
@@ -58,6 +59,8 @@ def checksum_check(source, hashfn, check_path):
 def main():
     parser = argparse.ArgumentParser(
         description='Checksum tar archives or directory trees.')
+    parser.add_argument(
+        '--version', action="version", version=f"tarsum, version {__version__}")
     parser.add_argument(
         'source', type=pathlib.Path, help='first tar archive or directory')
     algos = parser.add_mutually_exclusive_group()

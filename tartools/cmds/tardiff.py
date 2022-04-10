@@ -5,6 +5,7 @@ import pathlib
 
 from tartools.directory import DirectoryTree
 from tartools.tar import TarTree
+from tartools.version import __version__
 
 
 def new_tree(path, writeable=False):
@@ -84,6 +85,8 @@ def diff(source1, source2, diffout, bsdiff=False):
 def main():
     parser = argparse.ArgumentParser(
         description='Diff tar archives or directory trees.')
+    parser.add_argument(
+        '--version', action="version", version=f"tardiff, version {__version__}")
     parser.add_argument(
         'source1', type=pathlib.Path, help='first tar archive or directory')
     parser.add_argument(
