@@ -3,6 +3,7 @@ import hashlib
 import io
 import os
 import pathlib
+import sys
 
 from tartools.directory import DirectoryTree
 from tartools.tar import TarTree
@@ -31,6 +32,29 @@ def checksum(source, hashfn):
     source.close()
 
 
+def checksum_check(source, hashfn, check_path):
+    source = new_tree(source)
+
+    delta = False
+    with open(check_path) as check_file:
+        for line in check_file:
+            checksum, filepath = line.split("  ", 1)
+            checksum, filepath = checksum.strip(), filepath.strip()
+            try:
+                inode = source[filepath]
+                if not inode.is_file():
+                    continue
+                if source.checksum(inode, hashfn) != checksum:
+                    delta = True
+                    print(inode.path, "differs")
+            except KeyError:
+                delta = True
+                print(filepath, "missing")
+
+    source.close()
+    return not delta
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Checksum tar archives or directory trees.')
@@ -43,6 +67,8 @@ def main():
         '--sha1', action="store_true", help='use sha1')
     algos.add_argument(
         '--sha256', action="store_true", help='use sha256')
+    parser.add_argument(
+        '-c', '--check', type=pathlib.Path, help='read checksums from file and check them')
     args = parser.parse_args()
 
     hashfn = hashlib.sha1
@@ -53,7 +79,10 @@ def main():
     if args.sha256:
         hashfn = hashlib.sha256
 
-    checksum(args.source, hashfn)
+    if args.check:
+        sys.exit(0 if checksum_check(args.source, hashfn, args.check) else -1)
+    else:
+        checksum(args.source, hashfn)
 
 
 if __name__ == "__main__":
