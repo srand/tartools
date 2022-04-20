@@ -1,7 +1,8 @@
 from contextlib import contextmanager
 import tarfile
 
-from tartools.tree import Inode, Tree
+from tartools import utils
+from tartools.tree import Inode, Tree, WhiteoutInode
 
 
 class TarTree(Tree):
@@ -11,10 +12,19 @@ class TarTree(Tree):
 
     def __iter__(self):
         for tarinfo in self._tarfile.getmembers():
-            yield TarInode(tarinfo)
+            name = utils.from_whiteout_path(tarinfo.name)
+            if name != tarinfo.name:
+                yield WhiteoutInode(self._path, name)
+            else:
+                yield TarInode(tarinfo)
 
     def __getitem__(self, path):
-        return TarInode(self._tarfile.getmember(path))
+        name = utils.from_whiteout_path(path)
+        if name != path:
+            return WhiteoutInode(self._path, name)
+        else:
+            tarinfo = self._tarfile.getmember(path)
+            return TarInode(tarinfo)
 
     def _as_tarinfo(self, inode):
         ti = tarfile.TarInfo(inode.path)
@@ -35,6 +45,11 @@ class TarTree(Tree):
     def add(self, inode, fileobj=None):
         tarinode = self._as_tarinfo(inode)
         self._tarfile.addfile(tarinode, fileobj)
+
+    def add_whiteout(self, inode):
+        tarinode = self._as_tarinfo(inode)
+        tarinode.name = whiteout_path(inode.path)
+        self.add(inode)
 
     @contextmanager
     def read(self, inode):

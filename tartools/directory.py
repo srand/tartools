@@ -3,7 +3,8 @@ import os
 import shutil
 import stat
 
-from tartools.tree import Tree, Inode
+from tartools.tree import Tree, Inode, WhiteoutInode
+from tartools import utils
 
 
 class DirectoryInode(Inode):
@@ -71,13 +72,24 @@ class DirectoryTree(Tree):
             if relroot == ".":
                 relroot = ""
             for dir in dirs:
-                yield DirectoryInode(self._path, os.path.join(relroot, dir))
+                if utils.is_whiteout_path(dir):
+                    yield WhiteoutInode(self._path, os.path.join(relroot, dir[4:]))
+                else:
+                    yield DirectoryInode(self._path, os.path.join(relroot, dir))
             for file in files:
-                yield DirectoryInode(self._path, os.path.join(relroot, file))
+                if utils.is_whiteout_path(file):
+                    yield WhiteoutInode(self._path, os.path.join(relroot, file[4:]))
+                else:
+                    yield DirectoryInode(self._path, os.path.join(relroot, file))
 
     def __getitem__(self, path):
         try:
-            return DirectoryInode(self._path, path)
+            wpath = utils.whiteout_path(path)
+            wfullpath = os.path.join(self._path, wpath)
+            if os.path.exists(wfullpath):
+                return WhiteoutInode(self._path, path)
+            else:
+                return DirectoryInode(self._path, path)
         except FileNotFoundError:
             raise KeyError(path)
 
@@ -91,6 +103,19 @@ class DirectoryTree(Tree):
             with open(fullpath, "wb", inode.mode) as destobj:
                 if fileobj:
                     shutil.copyfileobj(fileobj, destobj)
+
+    def add_whiteout(self, inode):
+        fullpath = os.path.join(self._path, inode.path)
+        fullpath = utils.whiteout_path(fullpath)
+        with open(fullpath, "wb") as destobj:
+            pass
+
+    def remove(self, inode):
+        fullpath = os.path.join(self._path, inode.path)
+        if os.path.isdir(fullpath):
+            shutil.rmtree(fullpath)
+        else:
+            os.unlink(fullpath)
 
     @contextmanager
     def read(self, inode):

@@ -42,9 +42,7 @@ def diff(source1, source2, diffout, bsdiff=False):
     for inode1 in source1:
         try:
             inode2 = source2[inode1.path]
-
-            if inode1.size != inode2.size or \
-               inode1.mode != inode2.mode:
+            if inode1.size != inode2.size or inode1.mode != inode2.mode:
                 file2 = None
                 if inode2.is_file():
                     with source2.read(inode2) as file2:
@@ -69,7 +67,16 @@ def diff(source1, source2, diffout, bsdiff=False):
                     else:
                         diffout.add(inode2, file2)
         except KeyError:
-            diffout.add_whiteout(inode1)
+            skip = False
+            for path in pathiter(inode1.path, skip=1):
+                try:
+                    comp = diffout[path]
+                    if comp.is_whiteout():
+                        skip = True
+                except KeyError:
+                    diffout.add(source2[path])
+            if not skip:
+                diffout.add_whiteout(inode1)
 
     for inode2 in source2:
         try:

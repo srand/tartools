@@ -28,8 +28,26 @@ def apply(source, diff, output, bsdiff=False, whiteouts=True):
     if bsdiff:
         import bsdiff4
 
+    # Step 1: Collect all deleted files and directories
+    deleted = []
+    for inode in diff:
+        if inode.is_whiteout():
+            deleted.append(inode)
+
+    def is_deleted(inode):
+        for d in deleted:
+            if d.is_parent_of(inode.path):
+                return True
+        return False
+
+    # Step 2: Add all files and directories from the source
+    # that have not been deleted. Patch files if they are
+    # present in the diff.
     for inode1 in source:
         try:
+            if is_deleted(inode1):
+                continue
+
             inode2 = diff[inode1.path]
             if inode1.is_file() and inode2.is_file() and bsdiff:
                 with source.read(inode1) as file1, diff.read(inode2) as file2:
@@ -37,15 +55,22 @@ def apply(source, diff, output, bsdiff=False, whiteouts=True):
                 inode2.size = len(patched)
                 output.add(inode2, io.BytesIO(patched))
             else:
-                # print(inode1.path, "->", inode2.path)
                 output.add(inode2)
         except KeyError:
-            # print(inode1.path, "kept")
             if inode1.is_file():
                 with source.read(inode1) as file1:
                     output.add(inode1, file1)
             else:
                 output.add(inode1)
+
+    # Step 3: Add files only available in the diff
+    for inode2 in diff:
+        if inode2.is_whiteout():
+            continue
+        try:
+            source[inode2.path]
+        except KeyError:
+            output.add(inode2)
 
     source.close()
     diff.close()
