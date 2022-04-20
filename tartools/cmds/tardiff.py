@@ -39,6 +39,14 @@ def diff(source1, source2, diffout, bsdiff=False):
     if bsdiff:
         import bsdiff4
 
+    deleted = []
+
+    def is_deleted(inode):
+        for d in deleted:
+            if d.is_parent_of(inode.path):
+                return True
+        return False
+
     for inode1 in source1:
         try:
             inode2 = source2[inode1.path]
@@ -67,6 +75,8 @@ def diff(source1, source2, diffout, bsdiff=False):
                     else:
                         diffout.add(inode2, file2)
         except KeyError:
+            if is_deleted(inode1):
+                continue
             skip = False
             for path in pathiter(inode1.path, skip=1):
                 try:
@@ -74,9 +84,10 @@ def diff(source1, source2, diffout, bsdiff=False):
                     if comp.is_whiteout():
                         skip = True
                 except KeyError:
-                    diffout.add(source2[path])
+                    diffout.add(source1[path])
             if not skip:
                 diffout.add_whiteout(inode1)
+                deleted.append(inode1)
 
     for inode2 in source2:
         try:

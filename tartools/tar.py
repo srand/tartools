@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+import pathlib
 import tarfile
 
 from tartools import utils
@@ -48,8 +49,8 @@ class TarTree(Tree):
 
     def add_whiteout(self, inode):
         tarinode = self._as_tarinfo(inode)
-        tarinode.name = whiteout_path(inode.path)
-        self.add(inode)
+        tarinode.name = utils.whiteout_path(inode.path)
+        self._tarfile.addfile(tarinode)
 
     @contextmanager
     def read(self, inode):
@@ -78,6 +79,9 @@ class TarInode(Inode):
 
     def is_symlink(self):
         return self._tarinfo.issym()
+
+    def is_parent_of(self, path):
+        return pathlib.Path(path).is_relative_to(self._tarinfo.name)
 
     @property
     def gid(self):

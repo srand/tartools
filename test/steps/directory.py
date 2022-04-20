@@ -50,6 +50,10 @@ def step_impl(context, path1, path2, out):
         context.workspace / path2,
         context.workspace / out)
 
+@when('we archive {path} into {tar}')
+def step_impl(context, path, tar):
+    subprocess.check_call(["tar", "-C", context.workspace / path, "-cvf", context.workspace / tar, "."])
+
 
 @when('we apply {diff} to {path1} into {path2}')
 def step_impl(context, diff, path1, path2):
@@ -57,6 +61,10 @@ def step_impl(context, diff, path1, path2):
         context.workspace / path1,
         context.workspace / diff,
         context.workspace / path2)
+
+@when('we list {path1}')
+def step_impl(context, path1):
+    subprocess.check_call(["tar", "-tvf", context.workspace / path1])
 
 
 @then('{path} is empty')
